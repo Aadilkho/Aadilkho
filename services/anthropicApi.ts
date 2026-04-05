@@ -1,19 +1,8 @@
-import {
-  CarReport,
-  GenerationOverview,
-  ReliabilityScores,
-  KnownIssue,
-  BestModelYear,
-  RunningCosts,
-  FinanceAnalysis,
-  CompetitorComparison,
-  FinalVerdict,
-} from '../types/report';
+import { CarReport, KnownIssue } from '../types/report';
 import { MARKETS, Market } from '../constants/markets';
 import { buildReliabilityPrompt, buildFinancePrompt } from '../constants/prompts';
-
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-20250514';
+import { Provider } from './apiKeys';
+import { callProvider } from './providers';
 
 function safeParseJSON(raw: string): any {
   const start = raw.indexOf('{');
@@ -22,51 +11,26 @@ function safeParseJSON(raw: string): any {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
-async function callClaude(apiKey: string, prompt: string): Promise<string> {
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text as string;
-}
-
 export type ProgressCallback = (step: 1 | 2) => void;
 
 export async function researchCar(
+  provider: Provider,
   apiKey: string,
   car: string,
   country: string,
   onProgress: ProgressCallback
 ): Promise<CarReport> {
-  if (!apiKey) throw new Error('No API key configured. Add EXPO_PUBLIC_ANTHROPIC_API_KEY to your .env file.');
-
   const market: Market = MARKETS[country];
   if (!market) throw new Error(`Unknown market: ${country}`);
 
   // Call 1: Reliability & Issues
   onProgress(1);
-  const raw1 = await callClaude(apiKey, buildReliabilityPrompt(car, country, market));
+  const raw1 = await callProvider(provider, apiKey, buildReliabilityPrompt(car, country, market));
   const d1 = safeParseJSON(raw1);
 
   // Call 2: Finance & Competitors
   onProgress(2);
-  const raw2 = await callClaude(apiKey, buildFinancePrompt(car, country, market));
+  const raw2 = await callProvider(provider, apiKey, buildFinancePrompt(car, country, market));
   const d2 = safeParseJSON(raw2);
 
   const go = d1.generation_overview ?? {};
