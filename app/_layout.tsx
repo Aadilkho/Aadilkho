@@ -15,6 +15,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="settings" />
         <Stack.Screen name="loading" />
         <Stack.Screen name="report" />
       </Stack>
