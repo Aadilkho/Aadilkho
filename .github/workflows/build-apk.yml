@@ -44,41 +44,25 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build APK via EAS cloud and download artifact
+      - name: Build APK via EAS cloud
+        env:
+          BUILD_PROFILE: ${{ github.event.inputs.profile || 'preview' }}
         run: |
-          echo "Submitting cloud build..."
           BUILD_JSON=$(eas build \
             --platform android \
-            --profile ${{ github.event.inputs.profile || 'preview' }} \
+            --profile "$BUILD_PROFILE" \
             --non-interactive \
-            --json 2>&1)
+            --json 2>&1 | tail -1)
 
-          echo "Build output: $BUILD_JSON"
+          BUILD_URL=$(echo "$BUILD_JSON" | jq -r '.[0].artifacts.buildUrl // empty' 2>/dev/null || echo "")
 
-          BUILD_URL=$(echo "$BUILD_JSON" | python3 -c "
-import sys, json
-raw = sys.stdin.read()
-# Find the JSON object in the output
-start = raw.find('{')
-if start == -1:
-    start = raw.find('[')
-if start != -1:
-    try:
-        data = json.loads(raw[start:])
-        if isinstance(data, list):
-            data = data[0]
-        print(data.get('artifacts', {}).get('buildUrl', ''))
-    except:
-        pass
-" 2>/dev/null || echo "")
-
-          if [ -n "$BUILD_URL" ]; then
-            echo "Downloading APK from: $BUILD_URL"
+          if [ -n "$BUILD_URL" ] && [ "$BUILD_URL" != "null" ]; then
+            echo "Downloading APK from EAS..."
             curl -L "$BUILD_URL" -o cariq.apk
-            echo "APK downloaded successfully"
+            echo "APK saved to cariq.apk"
           else
-            echo "Build submitted to EAS cloud."
-            echo "Download your APK at: https://expo.dev/accounts/aadilkho/projects/cariq/builds"
+            echo "Build submitted. Download APK at:"
+            echo "https://expo.dev/accounts/aadilkho/projects/cariq/builds"
           fi
 
       - name: Upload APK artifact
