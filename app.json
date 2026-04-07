@@ -27,7 +27,18 @@
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"],
-    "scheme": "cariq"
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "cariq",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "6855b262-3124-4bf3-a02c-b2f33095768c"
+      }
+    },
+    "owner": "aadilkho"
   }
 }
