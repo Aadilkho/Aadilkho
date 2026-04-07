@@ -23,7 +23,7 @@ export const PROVIDER_META: Record<Provider, { label: string; model: string; key
   },
   gemini: {
     label: 'Gemini',
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.5-flash',
     keyLabel: 'Google AI API Key',
     keyPlaceholder: 'AIza...',
     docsUrl: 'aistudio.google.com',

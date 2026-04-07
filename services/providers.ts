@@ -42,7 +42,7 @@ async function callAnthropic(apiKey: string, prompt: string): Promise<string> {
 }
 
 async function callGemini(apiKey: string, prompt: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
