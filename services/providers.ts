@@ -1,4 +1,23 @@
 import { Provider } from './apiKeys';
+import { PROXY_URL } from '../constants/config';
+
+async function callProxy(prompt: string): Promise<string> {
+  if (!PROXY_URL) {
+    throw new Error('Free tier is not available yet. Please add your own API key in Settings.');
+  }
+  const res = await fetch(`${PROXY_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(`Free tier error ${res.status}: ${msg}`);
+  }
+  const data = await res.json();
+  if (!data.text) throw new Error('Empty response from free tier');
+  return data.text as string;
+}
 
 async function callAnthropic(apiKey: string, prompt: string): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -62,6 +81,8 @@ async function callOpenAI(apiKey: string, prompt: string): Promise<string> {
 }
 
 export async function callProvider(provider: Provider, apiKey: string, prompt: string): Promise<string> {
+  // Empty key = free tier via proxy
+  if (!apiKey) return callProxy(prompt);
   switch (provider) {
     case 'anthropic': return callAnthropic(apiKey, prompt);
     case 'gemini': return callGemini(apiKey, prompt);

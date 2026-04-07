@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,13 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Modal,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import { MARKET_NAMES } from '../constants/markets';
 import { getRecentSearches, getPreferredCountry, savePreferredCountry } from '../services/storage';
-import { getActiveProviderAndKey, hasAnyKey, PROVIDER_META } from '../services/apiKeys';
+import { getActiveProviderAndKey, PROVIDER_META } from '../services/apiKeys';
 import { RecentSearch } from '../types/report';
 
 export default function HomeScreen() {
@@ -24,8 +23,8 @@ export default function HomeScreen() {
   const [country, setCountry] = useState('South Africa');
   const [showPicker, setShowPicker] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const [showSetupModal, setShowSetupModal] = useState(false);
   const [activeProvider, setActiveProvider] = useState<string | null>(null);
+  const [usingFreeTier, setUsingFreeTier] = useState(false);
 
   const loadState = useCallback(async () => {
     const [preferred, recent, active] = await Promise.all([
@@ -35,12 +34,8 @@ export default function HomeScreen() {
     ]);
     if (preferred) setCountry(preferred);
     setRecentSearches(recent);
-    setActiveProvider(active ? PROVIDER_META[active.provider].label : null);
-
-    // Show setup modal if no key is configured
-    if (!(await hasAnyKey())) {
-      setShowSetupModal(true);
-    }
+    setUsingFreeTier(active.free);
+    setActiveProvider(active.free ? 'Free · Gemini' : PROVIDER_META[active.provider].label);
   }, []);
 
   // Reload when screen comes back into focus (e.g. returning from settings)
@@ -52,14 +47,9 @@ export default function HomeScreen() {
     await savePreferredCountry(c);
   };
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     const trimmed = car.trim();
     if (!trimmed) return;
-    const active = await getActiveProviderAndKey();
-    if (!active) {
-      setShowSetupModal(true);
-      return;
-    }
     router.push({ pathname: '/loading', params: { car: trimmed, country } });
   };
 
@@ -72,31 +62,14 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* No-key setup modal */}
-      <Modal visible={showSetupModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalIcon}>\uD83D\uDD11</Text>
-            <Text style={styles.modalTitle}>Add an AI Key</Text>
-            <Text style={styles.modalBody}>
-              CarIQ needs an API key to research cars. You can use Claude, Gemini, or ChatGPT.
-              Your key is stored only on this device.
-            </Text>
-            <TouchableOpacity
-              style={styles.modalBtn}
-              onPress={() => { setShowSetupModal(false); router.push('/settings'); }}
-            >
-              <Text style={styles.modalBtnText}>Set up API Key</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalSkip}
-              onPress={() => setShowSetupModal(false)}
-            >
-              <Text style={styles.modalSkipText}>Dismiss</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Free tier banner */}
+      {usingFreeTier && (
+        <TouchableOpacity style={styles.freeBanner} onPress={() => router.push('/settings')} activeOpacity={0.8}>
+          <Text style={styles.freeBannerIcon}>✦</Text>
+          <Text style={styles.freeBannerText}>Free tier active · Add your own key for faster results</Text>
+          <Text style={styles.freeBannerArrow}>›</Text>
+        </TouchableOpacity>
+      )}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
@@ -346,47 +319,17 @@ const styles = StyleSheet.create({
 
   footerTip: { textAlign: 'center', color: COLORS.textMuted, fontSize: 12, marginTop: 28 },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
+  freeBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.xl,
+    backgroundColor: `${COLORS.accent}18`,
+    borderBottomWidth: 1,
+    borderBottomColor: `${COLORS.accent}30`,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 10,
+    gap: 8,
   },
-  modalCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modalIcon: { fontSize: 40, marginBottom: SPACING.md },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-    textAlign: 'center',
-  },
-  modalBody: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: SPACING.lg,
-  },
-  modalBtn: {
-    backgroundColor: COLORS.accent,
-    borderRadius: RADIUS.md,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.xl,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  modalBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  modalSkip: { paddingVertical: 8 },
-  modalSkipText: { color: COLORS.textMuted, fontSize: 13 },
+  freeBannerIcon: { fontSize: 12, color: COLORS.accent },
+  freeBannerText: { flex: 1, fontSize: 12, color: COLORS.accent, fontWeight: '500' },
+  freeBannerArrow: { fontSize: 18, color: COLORS.accent, opacity: 0.7 },
 });

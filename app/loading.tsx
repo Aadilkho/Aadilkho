@@ -37,9 +37,7 @@ export default function LoadingScreen() {
     const run = async () => {
       try {
         const active = await getActiveProviderAndKey();
-        if (!active) throw new Error('No API key configured. Go to Settings and add your key.');
-
-        setProviderLabel(PROVIDER_META[active.provider].label);
+        setProviderLabel(active.free ? 'Free · Gemini' : PROVIDER_META[active.provider].label);
 
         const report = await researchCar(active.provider, active.key, car, country, (s) => {
           setStep(s - 1);

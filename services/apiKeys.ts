@@ -79,15 +79,20 @@ export async function saveSelectedProvider(provider: Provider): Promise<void> {
   } catch {}
 }
 
-export async function getActiveProviderAndKey(): Promise<{ provider: Provider; key: string } | null> {
+export type ActiveMode =
+  | { provider: Provider; key: string; free: false }
+  | { provider: 'gemini'; key: ''; free: true };
+
+export async function getActiveProviderAndKey(): Promise<ActiveMode> {
   const [keys, provider] = await Promise.all([getApiKeys(), getSelectedProvider()]);
   const key = keys[provider];
-  if (key) return { provider, key };
+  if (key) return { provider, key, free: false };
   // Fallback to any available key
   for (const p of PROVIDER_ORDER) {
-    if (keys[p]) return { provider: p, key: keys[p]! };
+    if (keys[p]) return { provider: p, key: keys[p]!, free: false };
   }
-  return null;
+  // No key configured — use free Gemini proxy
+  return { provider: 'gemini', key: '', free: true };
 }
 
 export async function hasAnyKey(): Promise<boolean> {
