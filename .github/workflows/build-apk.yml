@@ -1,13 +1,6 @@
 name: Build Android APK
 
 on:
-  push:
-    branches:
-      - claude/cariq-react-native-app-9JSgA
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       profile:
