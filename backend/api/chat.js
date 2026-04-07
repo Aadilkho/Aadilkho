@@ -21,7 +21,11 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.2 },
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.2,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 

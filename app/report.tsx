@@ -47,7 +47,7 @@ export default function ReportScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.errorWrap}>
-          <Text style={styles.errorIcon}>\u26a0\ufe0f</Text>
+          <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Research Failed</Text>
           <Text style={styles.errorMessage}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => router.back()}>
